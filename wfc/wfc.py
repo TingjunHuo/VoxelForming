@@ -45,7 +45,10 @@ class WFC:
             else:
                 # cum_valid_opts(module) will hold all the options that satisfy the connection rules of each face
                 # the valid_options(module) are computed by the condition of each slot
-                cum_valid_opts = voxel_array.options
+                cum_valid_opts = []
+                for module in voxel_array.options:
+                    for part in module.parts:
+                        cum_valid_opts.append(part)
 
                 # check front slot
                 if cur_slot.front != 0:
@@ -109,7 +112,10 @@ class WFC:
         else:
             # cum_valid_opts(module) will hold all the options that satisfy the connection rules of each face
             # the valid_options(module) are computed by the condition of each slot
-            cum_valid_opts = voxel_array.options
+            cum_valid_opts = []
+            for module in voxel_array.options:
+                for part in module.parts:
+                    cum_valid_opts.append(part)
 
             # check front slot
             if agent.front != 0:

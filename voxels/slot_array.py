@@ -6,7 +6,7 @@ from voxels.slot import Slot
 
 class SlotArray:
 
-    def __init__(self, length, width, height, point_list, options):
+    def __init__(self, length, width, height, point_list, module_options):
         # define a empty slot
         self.EMPTY_SLOT = Slot(-9999, -9999, -9999, [])
         self.EMPTY_SLOT.is_collapsed = True
@@ -17,7 +17,7 @@ class SlotArray:
         self.slot_arr = np.empty((self.length, self.width, self.height), dtype=Slot)
         self._point_arr = np.empty(len(point_list), dtype=object)
         # options are modules
-        self.options = options
+        self.options = module_options
         self.size = 0
 
     def set_up(self):
