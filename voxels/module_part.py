@@ -1,8 +1,7 @@
 class Part:
 
-    def __init__(self, faces_list, parent_index):
-        self.coords = []
-        self.parent = parent_index
+    def __init__(self, faces_list,  parent_module=None, re_coords=None):
+        self.index = parent_module.index
         self.faces = faces_list
         self.front = []
         self.back = []
@@ -10,6 +9,13 @@ class Part:
         self.right = []
         self.top = []
         self.bottom = []
+        self.parent = parent_module
+        if re_coords is None:
+            self.re_coords = []
+            self.is_child = False
+        else:
+            self.re_coords = re_coords
+            self.is_child = True
 
     def set_rules(self, modules):
         for module in modules:

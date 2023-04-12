@@ -41,7 +41,7 @@ def export_slot(arr):
         if slot is arr.EMPTY_SLOT or not slot.is_collapsed:
             continue
         if len(slot.module_opts) != 0:
-            coords_index = slot.module_opts[0].parent
+            coords_index = slot.module_opts[0].index
             coords[coords_index].append((slot.x, slot.y, slot.z))
         else:
             coords["Empty"].append((slot.x, slot.y, slot.z))
@@ -74,13 +74,13 @@ def main():
     # define connection rules
     # order: front:0 ,back:1, left:2, right:3, top:4, bottom:5
     # module0
-    options[0].parts = [Part([0, 0, 0, 0, 1, 1], 0)]
+    options[0].parts = [Part([0, 0, 0, 0, 1, 1], options[0])]
     # module1
-    options[1].parts = [Part([0, 0, 0, 0, 2, 1], 1)]
+    options[1].parts = [Part([0, 0, 0, 0, 2, 1], options[1])]
     # module2
-    options[2].parts = [Part([0, 0, 0, 0, 1, 2], 2)]
+    options[2].parts = [Part([0, 0, 0, 0, 1, 2], options[2])]
     # module3 
-    options[3].parts = [Part([0, 0, 0, 0, 2, 2], 3)]
+    options[3].parts = [Part([0, 0, 0, 0, 2, 2], options[3])]
 
 
     # update rule for each module

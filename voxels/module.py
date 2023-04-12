@@ -12,3 +12,12 @@ class Module:
         for part in self.parts:
             part.set_rules(modules)
             part.parent = self.index
+
+    def cul_rel(self, chosen_part):
+        rel_coords = []
+        x, y, z = chosen_part.re_coords
+        for part in self.parts:
+            tar_x, tar_y, tar_z = part.re_coords
+            rel_coord = [tar_x - x, tar_y - y, tar_z - z]
+            rel_coords.append(rel_coord)
+        return rel_coords

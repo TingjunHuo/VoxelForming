@@ -1,5 +1,6 @@
 import random
 from voxels.module import Module
+from voxels.module_part import Part
 
 class Slot:
     is_collapsed = False
@@ -33,8 +34,9 @@ class Slot:
     # observe the cell/or collapse the cell
     def observe(self):
         try:
+            test_opts = random.choice(self.module_opts)
             # random pick an option from the options list
-            self.module_opts = [random.choice(self.module_opts)]
+            self.module_opts = [test_opts]
             self.is_collapsed = True
         except:
             return

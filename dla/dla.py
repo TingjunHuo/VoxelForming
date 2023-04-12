@@ -19,7 +19,8 @@ def are_orthogonal(index1, index2):
     z_diff = abs(index1[2] - index2[2])
 
     # Check if exactly one of the dimensions has a non-zero difference
-    if (x_diff > 0 and y_diff == 0 and z_diff == 0) or (x_diff == 0 and y_diff > 0 and z_diff == 0) or (x_diff == 0 and y_diff == 0 and z_diff > 0):
+    if (x_diff > 0 and y_diff == 0 and z_diff == 0) or (x_diff == 0 and y_diff > 0 and z_diff == 0) or (
+            x_diff == 0 and y_diff == 0 and z_diff > 0):
         return True
     else:
         return False
@@ -27,6 +28,9 @@ def are_orthogonal(index1, index2):
 
 def diagonal_add(probability):
     return random.random() < probability
+
+
+probability = 0.8
 
 
 class DLA:
@@ -75,7 +79,6 @@ class DLA:
         # move agents
         np_arr = self.slots.get_arr()
         for ag in self.free_slots:
-
             coords = np.argwhere(np_arr == ag)
             x_coord = coords[0][0] + random.normalvariate(1.5, self.noise)
             y_coord = coords[0][1] + random.normalvariate(1.5, self.noise)
@@ -95,7 +98,7 @@ class DLA:
                 fix_coords = np.argwhere(np_arr == j)[0]
                 if are_adjacent(coords, fix_coords):
                     # diagonal situation and the probability is not ture
-                    if not are_orthogonal(coords, fix_coords) and not diagonal_add(0.3) :
+                    if not are_orthogonal(coords, fix_coords) and not diagonal_add(probability):
                         continue
                     else:
                         self.fixed_slots.append(self.free_slots.pop(i))

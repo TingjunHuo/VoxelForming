@@ -24,8 +24,7 @@ class WFC:
         filtered_arr = list(filter(lambda x: x.entropy() == init_slot.entropy(), filtered_arr))
         pick_slot = random.choice(filtered_arr)
         return pick_slot
-    
-    
+
     # WFC function
     @staticmethod
     def collapse(voxel_array: SlotArray):
@@ -169,8 +168,6 @@ class WFC:
             agent.module_opts = cum_valid_opts
             agent.update()
 
-
-
     # check if the slot array is fully collapsed
     @staticmethod
     def is_fully_collapsed(voxel_array: SlotArray):
@@ -179,10 +176,43 @@ class WFC:
                 return False
         return True
 
+    @staticmethod
+    def observe(agent: Slot, coords, voxel_array: SlotArray):
+        try:
+            test_opt = random.choice(agent.module_opts)
+            if test_opt.is_child:
+                parent = test_opt.parent
+                rel_coords = parent.cul_rel(agent)
+                tar_slots = voxel_array.get_arr()
+                abs_coords = []
+                # Testing if it neighbors could accommodate the bigger unit
+                for i in range(len(rel_coords)):
+                    rel_x, rel_y, rel_z = rel_coords[i]
+                    abs_x = coords[0] + rel_x
+                    abs_y = coords[1] + rel_y
+                    abs_z = coords[2] + rel_z
+                    internal_part = parent.parts[i]
+                    tar_slot = tar_slots[abs_x, abs_y, abs_z]
+                    if tar_slot.is_collapsed:
+                        return
+                    if internal_part not in tar_slot.module_opts:
+                        return
+                    abs_coords.append([abs_x, abs_y, abs_z])
+                # Collapse neighbors
+                for i in range(len(abs_coords)):
+                    x, y, z = abs_coords[i]
+                    tar_slot = tar_slots[x,y,z]
+                    opts = parent.parts[i]
+                    # random pick an option from the options list
+                    tar_slot.module_opts = [opts]
+                    tar_slot.is_collapsed = True
+        except:
+            return
+
     # observe every un-collapsed slots in array
     # do it when the loop meet the max iteration times
     @staticmethod
-    def observe_slot(voxel_array: SlotArray):
+    def observe_array(voxel_array: SlotArray):
         for index, slot in np.ndenumerate(voxel_array.slot_arr):
             if not slot.is_collapsed:
                 slot.observe()
