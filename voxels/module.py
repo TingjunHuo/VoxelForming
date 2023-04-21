@@ -11,7 +11,6 @@ class Module:
     def set_rules(self, modules):
         for part in self.parts:
             part.set_rules(modules)
-            part.parent = self.index
 
     def cul_rel(self, chosen_part):
         rel_coords = []

@@ -178,36 +178,40 @@ class WFC:
 
     @staticmethod
     def observe(agent: Slot, coords, voxel_array: SlotArray):
-        try:
-            test_opt = random.choice(agent.module_opts)
-            if test_opt.is_child:
-                parent = test_opt.parent
-                rel_coords = parent.cul_rel(agent)
-                tar_slots = voxel_array.get_arr()
-                abs_coords = []
-                # Testing if it neighbors could accommodate the bigger unit
-                for i in range(len(rel_coords)):
-                    rel_x, rel_y, rel_z = rel_coords[i]
-                    abs_x = coords[0] + rel_x
-                    abs_y = coords[1] + rel_y
-                    abs_z = coords[2] + rel_z
-                    internal_part = parent.parts[i]
-                    tar_slot = tar_slots[abs_x, abs_y, abs_z]
-                    if tar_slot.is_collapsed:
-                        return
-                    if internal_part not in tar_slot.module_opts:
-                        return
-                    abs_coords.append([abs_x, abs_y, abs_z])
-                # Collapse neighbors
-                for i in range(len(abs_coords)):
-                    x, y, z = abs_coords[i]
-                    tar_slot = tar_slots[x,y,z]
-                    opts = parent.parts[i]
-                    # random pick an option from the options list
-                    tar_slot.module_opts = [opts]
-                    tar_slot.is_collapsed = True
-        except:
+        if not agent.module_opts:  # Check if agent.module_opts is not empty
             return
+
+        test_opt = random.choice(agent.module_opts)
+        if test_opt.is_child:
+            parent = test_opt.parent
+            rel_coords = parent.cul_rel(test_opt)
+            tar_slots = voxel_array.get_arr()
+            abs_coords = []
+            array_shape = tar_slots.shape
+            for i, rel_coord in enumerate(rel_coords):  # Use enumerate() to get index and element
+                abs_x = coords[0] + rel_coord[0]
+                abs_y = coords[1] + rel_coord[1]
+                abs_z = coords[2] + rel_coord[2]
+                internal_part = parent.parts[i]
+                if abs_x < 0 or abs_x >= array_shape[0] or \
+                        abs_y < 0 or abs_y >= array_shape[1] \
+                        or abs_z < 0 or abs_z >= array_shape[2]:
+                    return
+                tar_slot = tar_slots[abs_x, abs_y, abs_z]
+
+                if tar_slot.is_collapsed or internal_part not in tar_slot.module_opts:
+                    return
+                abs_coords.append([abs_x, abs_y, abs_z])
+
+            for i, abs_coord in enumerate(abs_coords):  # Use enumerate() again
+                x, y, z = abs_coord
+                tar_slot = tar_slots[x, y, z]
+                opts = parent.parts[i]
+                tar_slot.module_opts = [opts]
+                tar_slot.is_collapsed = True
+        else:
+            agent.module_opts = [test_opt]
+            agent.is_collapsed = True
 
     # observe every un-collapsed slots in array
     # do it when the loop meet the max iteration times

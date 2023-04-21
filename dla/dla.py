@@ -1,5 +1,7 @@
 import random
 import numpy as np
+
+from voxels.slot import Slot
 from voxels.slot_array import SlotArray
 from wfc.wfc import WFC
 
@@ -35,77 +37,180 @@ probability = 0.8
 
 class DLA:
     def __init__(self, slots_array: SlotArray, particles_num, noise):
-        self.free_slots = []
+        self.free_agent = []
         self.fixed_slots = []
         self.noise = noise
         self.slots = slots_array
         self.particles_num = particles_num
 
-        fixed = WFC.heuristic_pick(slots_array)
-        fixed.observe()
-        self.fixed_slots.append(fixed)
+    def fixed_generate(self):
+        for i in range(4):
+            fixed = WFC.heuristic_pick(self.slots)
+            np_arr = self.slots.get_arr()
+            coords = np.argwhere(np_arr == fixed)
+            self._dla_observe(fixed, coords[0], self.slots)
+            self.fixed_slots.append(fixed)
+
+    # def agent_generate(self):
+    #     arr_size = self.slots.get_size()
+    #     if self.particles_num > arr_size:
+    #         self.particles_num = round(arr_size * 0.1)
+    #
+    #     loop = True
+    #     index = 0
+    #     while loop:
+    #         shape = self.slots.get_arr().shape
+    #         index_0 = np.random.randint(0, shape[0])
+    #         index_1 = np.random.randint(0, shape[1])
+    #         index_2 = np.random.randint(0, shape[2])
+    #         # Record coordination of agent
+    #         self.free_agent.append([index_0, index_1, index_2])
+    #         index += 1
+    #         if len(self.free_agent) >= self.particles_num or index >= self.particles_num * 3:
+    #             loop = False
+    #             index = 0
 
     def agent_generate(self):
-        self.free_slots = []
         arr_size = self.slots.get_size()
         if self.particles_num > arr_size:
-            self.particles_num = arr_size * 0.1
+            self.particles_num = round(arr_size * 0.1)
 
-        loop = True
+        shape = self.slots.get_arr().shape
+        axis_indices = [np.linspace(0, shape[i] - 1, num=int(np.ceil(np.power(self.particles_num, 1 / 3))), dtype=int)
+                        for i in range(3)]
+
         index = 0
-        while loop:
-            shape = self.slots.get_arr().shape
-            index_0 = np.random.randint(0, shape[0])
-            index_1 = np.random.randint(0, shape[1])
-            index_2 = np.random.randint(0, shape[2])
-            agent = self.slots.get_arr()[index_0, index_1, index_2]
-            if agent.is_collapsed:
-                continue
-            self.free_slots.append(agent)
-            index += 1
-            if len(self.free_slots) == self.particles_num or index == self.particles_num * 3:
-                loop = False
-                index = 0
+        while index < self.particles_num:
+            index_0 = np.random.choice(axis_indices[0])
+            index_1 = np.random.choice(axis_indices[1])
+            index_2 = np.random.choice(axis_indices[2])
+            coord = [index_0, index_1, index_2]
+
+            if coord not in self.free_agent:
+                self.free_agent.append(coord)
+                index += 1
 
     def fixed_slots_ratio(self, percentage):
         total_size = self.slots.get_size()
         fixed_size = len(self.fixed_slots)
         ratio = fixed_size / total_size
-        return percentage - 0.05 < ratio < percentage + 0.05
+        return ratio > percentage
 
     def dla_run(self):
-        # generate new agents in the dla system
-        self.agent_generate()
-        # move agents
+        # Get the slots array
         np_arr = self.slots.get_arr()
-        for ag in self.free_slots:
-            coords = np.argwhere(np_arr == ag)
-            x_coord = coords[0][0] + random.normalvariate(1.5, self.noise)
-            y_coord = coords[0][1] + random.normalvariate(1.5, self.noise)
-            z_coord = coords[0][2] + random.normalvariate(1.5, self.noise)
-            shape = np_arr.shape
+        loop = True
+        index = 0
+        move_index = 0
+        shape = np_arr.shape
+
+        while loop:
+            ag_index = self.free_agent[index]
+            # move agents
+            x_coord = ag_index[0] + random.normalvariate(0, self.noise)
+            y_coord = ag_index[1] + random.normalvariate(0, self.noise)
+            z_coord = ag_index[2] + random.normalvariate(0, self.noise)
+
             # clip shape
             x_coord = int(np.clip(x_coord, 0, shape[0] - 1))
             y_coord = int(np.clip(y_coord, 0, shape[1] - 1))
             z_coord = int(np.clip(z_coord, 0, shape[2] - 1))
-            ag = np_arr[x_coord][y_coord][z_coord]
+            ag_index = [x_coord, y_coord, z_coord]
+            # check if the moved agent is in a fixed slot
+            ag_slot = np_arr[ag_index[0], ag_index[1], ag_index[2]]
+            # Finsh this agent move
+            if ag_slot is self.slots.EMPTY_SLOT:
+                move_index += 1
+            elif not ag_slot.is_collapsed or move_index == 5:
+                self.free_agent[index] = ag_index
+                index += 1
+                move_index = 0
+            else:
+                move_index += 1
+
+            if index == self.particles_num:
+                index = 0
+                loop = False
 
         # loop particles
-        for i in range(len(self.free_slots) - 1, -1, -1):
-            agent = self.free_slots[i]
-            coords = np.argwhere(np_arr == agent)[0]
-            for j in self.fixed_slots:
-                fix_coords = np.argwhere(np_arr == j)[0]
-                if are_adjacent(coords, fix_coords):
-                    # diagonal situation and the probability is not ture
-                    if not are_orthogonal(coords, fix_coords) and not diagonal_add(probability):
-                        continue
-                    else:
-                        self.fixed_slots.append(self.free_slots.pop(i))
-                        WFC.agent_collapse(agent, self.slots)
-                        agent.observe()
-                        # break the loop the agent is fixed
+        for i in range(len(self.free_agent) - 1, -1, -1):
+            ag_index = self.free_agent[i]
+            ag_slot = np_arr[ag_index[0], ag_index[1], ag_index[2]]
+            # if agent move to a fixed slots, continue the loop
+            if ag_slot.is_collapsed:
+                continue
+
+            break_all_loops = False
+            for x in range(-1, 2):
+                if break_all_loops:
+                    break
+                for y in range(-1, 2):
+                    if break_all_loops:
                         break
+                    for z in range(-1, 2):
+                        if x == 0 and y == 0 and z == 0:
+                            continue
+                        # check if the index is out of bouncy
+                        adjacent_x = ag_index[0] + x
+                        adjacent_y = ag_index[1] + y
+                        adjacent_z = ag_index[2] + z
+                        if adjacent_x >= shape[0] or adjacent_y >= shape[1] or adjacent_z >= shape[2]:
+                            continue
+                        adjacent_slot = np_arr[adjacent_x, adjacent_y, adjacent_z]
+                        if adjacent_slot not in self.fixed_slots:
+                            continue
+                        else:
+                            fix_coords = [adjacent_x, adjacent_y, adjacent_z]
+                            if not are_orthogonal(ag_index, fix_coords) and not diagonal_add(probability):
+                                continue
+                            else:
+                                self.fixed_slots.append(ag_slot)
+                                WFC.agent_collapse(ag_slot, self.slots)
+                                self._dla_observe(ag_slot, ag_index, self.slots)
+                                # agent.observe()
+                                # break the loop the agent is fixed
+                                break_all_loops = True
+                                break
+
+
+    def _dla_observe(self, agent: Slot, coords, voxel_array: SlotArray):
+        # Check if agent.module_opts is not empty
+        if not agent.module_opts:
+            return
+
+        test_opt = random.choice(agent.module_opts)
+        if test_opt.is_child:
+            parent = test_opt.parent
+            rel_coords = parent.cul_rel(test_opt)
+            tar_slots = voxel_array.get_arr()
+            abs_coords = []
+            array_shape = tar_slots.shape
+            for i, rel_coord in enumerate(rel_coords):  # Use enumerate() to get index and element
+                abs_x = coords[0] + rel_coord[0]
+                abs_y = coords[1] + rel_coord[1]
+                abs_z = coords[2] + rel_coord[2]
+                internal_part = parent.parts[i]
+                if abs_x < 0 or abs_x >= array_shape[0] or \
+                        abs_y < 0 or abs_y >= array_shape[1] \
+                        or abs_z < 0 or abs_z >= array_shape[2]:
+                    return
+                tar_slot = tar_slots[abs_x, abs_y, abs_z]
+
+                if tar_slot.is_collapsed or internal_part not in tar_slot.module_opts:
+                    return
+                abs_coords.append([abs_x, abs_y, abs_z])
+
+            for i, abs_coord in enumerate(abs_coords):  # Use enumerate() again
+                x, y, z = abs_coord
+                tar_slot = tar_slots[x, y, z]
+                opts = parent.parts[i]
+                tar_slot.module_opts = [opts]
+                tar_slot.is_collapsed = True
+                if tar_slot not in self.fixed_slots:
+                    self.fixed_slots.append(tar_slot)
+        else:
+            agent.module_opts = [test_opt]
+            agent.is_collapsed = True
 
     @staticmethod
     def clip(n, min_n, max_n):
