@@ -1,6 +1,5 @@
 import random
-from voxels.module import Module
-from voxels.module_part import Part
+
 
 class Slot:
     is_collapsed = False
@@ -38,7 +37,7 @@ class Slot:
             # random pick an option from the options list
             self.module_opts = [test_opts]
             self.is_collapsed = True
-        except:
+        except IndexError:
             return
 
     def set_front(self, front):

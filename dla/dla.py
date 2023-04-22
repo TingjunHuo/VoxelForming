@@ -28,8 +28,8 @@ def are_orthogonal(index1, index2):
         return False
 
 
-def diagonal_add(probability):
-    return random.random() < probability
+def diagonal_add(prob):
+    return random.random() < prob
 
 
 probability = 0.8
@@ -43,13 +43,19 @@ class DLA:
         self.slots = slots_array
         self.particles_num = particles_num
 
-    def fixed_generate(self):
-        for i in range(4):
-            fixed = WFC.heuristic_pick(self.slots)
-            np_arr = self.slots.get_arr()
-            coords = np.argwhere(np_arr == fixed)
-            self._dla_observe(fixed, coords[0], self.slots)
-            self.fixed_slots.append(fixed)
+    def fixed_generate(self, initial_points=None):
+        np_arr = self.slots.get_arr()
+        if initial_points is None:
+            for i in range(4):
+                fixed = WFC.heuristic_pick(self.slots)
+                coords = np.argwhere(np_arr == fixed)
+                self._dla_observe(fixed, coords[0], self.slots)
+                self.fixed_slots.append(fixed)
+        else:
+            for index in initial_points:
+                fixed = np_arr[index[0], index[1], index[2]]
+                self._dla_observe(fixed, index, self.slots)
+                self.fixed_slots.append(fixed)
 
     # def agent_generate(self):
     #     arr_size = self.slots.get_size()
@@ -107,9 +113,9 @@ class DLA:
         while loop:
             ag_index = self.free_agent[index]
             # move agents
-            x_coord = ag_index[0] + random.normalvariate(0, self.noise)
-            y_coord = ag_index[1] + random.normalvariate(0, self.noise)
-            z_coord = ag_index[2] + random.normalvariate(0, self.noise)
+            x_coord = ag_index[0] + random.normalvariate(1, self.noise)
+            y_coord = ag_index[1] + random.normalvariate(1, self.noise)
+            z_coord = ag_index[2] + random.normalvariate(1, self.noise)
 
             # clip shape
             x_coord = int(np.clip(x_coord, 0, shape[0] - 1))
@@ -164,15 +170,18 @@ class DLA:
                             if not are_orthogonal(ag_index, fix_coords) and not diagonal_add(probability):
                                 continue
                             else:
-                                self.fixed_slots.append(ag_slot)
                                 WFC.agent_collapse(ag_slot, self.slots)
                                 self._dla_observe(ag_slot, ag_index, self.slots)
-                                # agent.observe()
+
+                                if ag_slot.is_collapsed:
+                                    self.fixed_slots.append(ag_slot)
+                                else:
+                                    continue
                                 # break the loop the agent is fixed
                                 break_all_loops = True
                                 break
 
-
+    # observe the selected slot and add it to the fixed list
     def _dla_observe(self, agent: Slot, coords, voxel_array: SlotArray):
         # Check if agent.module_opts is not empty
         if not agent.module_opts:
@@ -200,7 +209,7 @@ class DLA:
                     return
                 abs_coords.append([abs_x, abs_y, abs_z])
 
-            for i, abs_coord in enumerate(abs_coords):  # Use enumerate() again
+            for i, abs_coord in enumerate(abs_coords):
                 x, y, z = abs_coord
                 tar_slot = tar_slots[x, y, z]
                 opts = parent.parts[i]
@@ -212,11 +221,4 @@ class DLA:
             agent.module_opts = [test_opt]
             agent.is_collapsed = True
 
-    @staticmethod
-    def clip(n, min_n, max_n):
-        return max(min(n, max_n), min_n)
 
-    @staticmethod
-    def update(cur_state, ants):
-        pass
-        return cur_state

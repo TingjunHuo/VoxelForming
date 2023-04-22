@@ -7,7 +7,7 @@ from dla.dla import DLA
 from voxels.slot_array import SlotArray
 from voxels.module import Module
 from voxels.module_part import Part
-from wfc.wfc import WFC
+
 
 # ------------------------------------------------------------------------------------------#
 # global variables
@@ -110,6 +110,7 @@ def export_agent_history(agents_history, slotarray):
 # global variables
 point_list = load_file('points.anything')
 dimension = load_file('dimension.anything')
+initial_points = load_file('initial_points.anything')
 length = dimension[0]
 width = dimension[1]
 height = dimension[2]
@@ -147,14 +148,16 @@ def main():
     slot_arr = SlotArray(length, width, height, point_list, options)
     slot_arr.set_up()
     dla_forming = DLA(slot_arr, 10, 3)
-    dla_forming.fixed_generate()
+    dla_forming.fixed_generate(initial_points)
     dla_forming.agent_generate()
+
     arr_history = []
     agent_history = []
     deep_copied_list = copy.deepcopy(dla_forming.fixed_slots)
     deep_copied_agents = copy.deepcopy(dla_forming.free_agent)
     arr_history.append(deep_copied_list)
     agent_history.append(deep_copied_agents)
+
     # WFC
     loop = True
     loop_index = 0
@@ -177,8 +180,9 @@ def main():
             loop = False
     print(loop_index)
     export_history(arr_history)
-    # export_list(dla_forming.fixed_slots)
     export_agent_history(agent_history, dla_forming.slots)
+
+    # export_list(dla_forming.fixed_slots)
 
 
 # calling the main function
