@@ -220,3 +220,42 @@ class WFC:
         for index, slot in np.ndenumerate(voxel_array.slot_arr):
             if not slot.is_collapsed:
                 slot.observe()
+
+    @staticmethod
+    def dla_observe(agent: Slot, coords, voxel_array: SlotArray):
+
+        # Check if agent.module_opts is not empty
+        if not agent.module_opts:
+            return
+
+        test_opt = random.choice(agent.module_opts)
+        if test_opt.is_child:
+            parent = test_opt.parent
+            rel_coords = parent.cul_rel(test_opt)
+            tar_slots = voxel_array.get_arr()
+            abs_coords = []
+            array_shape = tar_slots.shape
+            for i, rel_coord in enumerate(rel_coords):  # Use enumerate() to get index and element
+                abs_x = coords[0] + rel_coord[0]
+                abs_y = coords[1] + rel_coord[1]
+                abs_z = coords[2] + rel_coord[2]
+                internal_part = parent.parts[i]
+                if abs_x < 0 or abs_x >= array_shape[0] or \
+                        abs_y < 0 or abs_y >= array_shape[1] \
+                        or abs_z < 0 or abs_z >= array_shape[2]:
+                    return
+                tar_slot = tar_slots[abs_x, abs_y, abs_z]
+
+                if tar_slot.is_collapsed or internal_part not in tar_slot.module_opts:
+                    return
+                abs_coords.append([abs_x, abs_y, abs_z])
+
+            for i, abs_coord in enumerate(abs_coords):
+                x, y, z = abs_coord
+                tar_slot = tar_slots[x, y, z]
+                opts = parent.parts[i]
+                tar_slot.module_opts = [opts]
+                tar_slot.is_collapsed = True
+        else:
+            agent.module_opts = [test_opt]
+            agent.is_collapsed = True

@@ -7,6 +7,7 @@ from wfc.wfc import WFC
 
 
 def are_adjacent(index1, index2):
+    '''checking whether two cells are adjacent'''
     x_diff = abs(index1[0] - index2[0])
     y_diff = abs(index1[1] - index2[1])
     z_diff = abs(index1[2] - index2[2])
@@ -16,6 +17,7 @@ def are_adjacent(index1, index2):
 
 
 def are_orthogonal(index1, index2):
+    '''checking whether two cells are adjacent'''
     x_diff = abs(index1[0] - index2[0])
     y_diff = abs(index1[1] - index2[1])
     z_diff = abs(index1[2] - index2[2])
@@ -37,48 +39,36 @@ probability = 0.8
 
 class DLA:
     def __init__(self, slots_array: SlotArray, particles_num, noise):
-        self.free_agent = []
-        self.fixed_slots = []
-        self.noise = noise
-        self.slots = slots_array
-        self.particles_num = particles_num
+        self.free_agent = []  # agent cells
+        self.fixed_slots = []  # class of slots in occupied cells
+        self.noise = noise   # constant float
+        self.slots = slots_array   # 3D array consist of slot instance (0,0,0)---> Slot
+        self.particles_num = particles_num  # constant int: number agent
 
     def fixed_generate(self, initial_points=None):
+        '''create initial occupied slot'''
         np_arr = self.slots.get_arr()
         if initial_points is None:
+            export_list = []
             for i in range(4):
                 fixed = WFC.heuristic_pick(self.slots)
                 coords = np.argwhere(np_arr == fixed)
                 self._dla_observe(fixed, coords[0], self.slots)
-                self.fixed_slots.append(fixed)
+                export_list.append(fixed)
+            self.fixed_slots.append(export_list)
         else:
+            export_list = []
             for index in initial_points:
                 fixed = np_arr[index[0], index[1], index[2]]
                 self._dla_observe(fixed, index, self.slots)
-                self.fixed_slots.append(fixed)
+                export_list.append(fixed)
+            self.fixed_slots.append(export_list)
 
-    # def agent_generate(self):
-    #     arr_size = self.slots.get_size()
-    #     if self.particles_num > arr_size:
-    #         self.particles_num = round(arr_size * 0.1)
-    #
-    #     loop = True
-    #     index = 0
-    #     while loop:
-    #         shape = self.slots.get_arr().shape
-    #         index_0 = np.random.randint(0, shape[0])
-    #         index_1 = np.random.randint(0, shape[1])
-    #         index_2 = np.random.randint(0, shape[2])
-    #         # Record coordination of agent
-    #         self.free_agent.append([index_0, index_1, index_2])
-    #         index += 1
-    #         if len(self.free_agent) >= self.particles_num or index >= self.particles_num * 3:
-    #             loop = False
-    #             index = 0
 
     def agent_generate(self):
+        '''create agent position in tuples'''
         arr_size = self.slots.get_size()
-        if self.particles_num > arr_size:
+        if self.particles_num > arr_size:  # mostly not happen, but test it
             self.particles_num = round(arr_size * 0.1)
 
         shape = self.slots.get_arr().shape
@@ -110,7 +100,36 @@ class DLA:
         move_index = 0
         shape = np_arr.shape
 
+
+
+        # for i in range(len(self.free_agent)):
+        #     ag_index = self.free_agent[i] # tuple now
+        #     ag_index = np.array(ag_index)  # now array
+        #     print(111, ag_index, ag_index.shape)
+        #
+        #     # movement
+        #     movement = np.random.randint(-1,2,size=(3,))
+        #     print(222, movement, movement.shape)
+        #
+        #     # move an agnet
+        #     next_ag = ag_index + movement
+        #     print(333, next_ag, next_ag.shape)
+        #
+        #     # clip
+        #     next_ag = np.clip(next_ag, 0, np.array(np_arr.shape) - 1)
+        #     print(444,next_ag, next_ag.shape)
+        #
+        #     # check availability
+        #     # 1) should not be occupied
+        #     # [0,1,1,
+        #     #  0,0,1,
+        #     #  0,0,0]  [0,2]  ==1: illegal  ==0: legal
+        #
+        #
+        #     break
+
         while loop:
+        # for i in range(len(self.free_agent)):
             ag_index = self.free_agent[index]
             # move agents
             x_coord = ag_index[0] + random.normalvariate(1, self.noise)
@@ -209,6 +228,7 @@ class DLA:
                     return
                 abs_coords.append([abs_x, abs_y, abs_z])
 
+            export_list = []
             for i, abs_coord in enumerate(abs_coords):
                 x, y, z = abs_coord
                 tar_slot = tar_slots[x, y, z]
@@ -216,7 +236,8 @@ class DLA:
                 tar_slot.module_opts = [opts]
                 tar_slot.is_collapsed = True
                 if tar_slot not in self.fixed_slots:
-                    self.fixed_slots.append(tar_slot)
+                    export_list.append(tar_slot)
+            self.fixed_slots.append(export_list)
         else:
             agent.module_opts = [test_opt]
             agent.is_collapsed = True

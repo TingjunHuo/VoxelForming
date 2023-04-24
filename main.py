@@ -162,13 +162,7 @@ def main():
     loop = True
     loop_index = 0
     while loop:
-        # Using WFC to form
-        # ------------------------------------------------------------------------------------------#
-        # WFC.collapse(slot_arr)
-        # loop = not WFC.is_fully_collapsed(slot_arr)
 
-        # Using dla to from
-        # ------------------------------------------------------------------------------------------#
         dla_forming.dla_run()
         # Export List
         deep_copied_list = copy.deepcopy(dla_forming.fixed_slots)
